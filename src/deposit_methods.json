@@ -1,0 +1,83 @@
+[
+    {
+        "key": "INR",
+        "label": "Indian National Rupee",
+        "symbol": "₹",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/e/ee/Indian_Rupee_symbol.svg",
+        "status": true
+    },
+    {
+        "key": "USD",
+        "label": "United States Dollar",
+        "symbol": "$",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/1/14/Dollar_Sign.svg",
+        "status": true
+    },
+    {
+        "key": "EUR",
+        "label": "€ Euro",
+        "symbol": "€",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/5/5c/Euro_symbol_black.svg",
+        "status": true
+    },
+    {
+        "key": "GBP",
+        "label": "British Pound",
+        "symbol": "£",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/4/45/Pound_Sign.svg",
+        "status": true
+    },
+    {
+        "key": "JPY",
+        "label": "Japanese Yen",
+        "symbol": "¥",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/9/95/Yen_sign.svg",
+        "status": true
+    },
+    {
+        "key": "CAD",
+        "label": "Canadian Dollar",
+        "symbol": "CA$",
+        "image": "",
+        "status": true
+    },
+    {
+        "key": "AUD",
+        "label": "Australian Dollar",
+        "symbol": "AU$",
+        "image": "",
+        "status": true
+    },
+    {
+        "key": "BRL",
+        "label": "Brazilian Real",
+        "symbol": "R$",
+        "image": "",
+        "status": true
+    },
+    {
+        "key": "CHF",
+        "label": "Swiss Franc",
+        "symbol": "CHF",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/d/d0/Swiss_franc_in_classic_solid_style.svg",
+        "status": true
+    },
+    {
+        "key": "AED",
+        "label": "United Arab Emirates Dirham",
+        "symbol": "د.إ.",
+        "image": "",
+        "status": true
+    }
+];
+
+
+[
+    {
+        "key": "bsc",
+        "label": "BNB Smart Chain",
+        "symbol": "BNB",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/1/1c/BNB%2C_native_cryptocurrency_for_the_Binance_Smart_Chain.svg",
+        "status": true
+    }
+]

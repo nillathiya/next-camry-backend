@@ -1,0 +1,172 @@
+[
+    {
+        "key": "dashboard",
+        "label": "Dashboard",
+        "icon": "HomeIcon",
+        "status": true
+    },
+    {
+        "key": "",
+        "label": "My Account",
+        "icon": "UserCircleIcon",
+        "status": true,
+        "children": [
+            {
+                "key": "profile",
+                "label": "Profile",
+                "icon": "UserIcon",
+                "status": true
+            },
+            {
+                "key": "edit-profile",
+                "label": "Edit Profile",
+                "icon": "PencilIcon",
+                "status": true
+            },
+            {
+                "key": "accounts",
+                "label": "Accounts",
+                "icon": "BanknotesIcon",
+                "status": true
+            },
+            {
+                "key": "v-card",
+                "label": "My V-card",
+                "icon": "CreditCardIcon",
+                "status": true
+            }
+        ]
+    },
+    {
+        "key": "",
+        "label": "Fund",
+        "icon": "CurrencyDollarIcon",
+        "status": true,
+        "children": [
+            {
+                "key": "add-fund",
+                "label": "Deposit Fund",
+                "icon": "ArrowDownTrayIcon",
+                "status": true
+            },
+            {
+                "key": "fund-history",
+                "label": "Deposit History",
+                "icon": "ClockIcon",
+                "status": true
+            },
+            {
+                "key": "transfer-fund",
+                "label": "Fund Transfer",
+                "icon": "ArrowPathIcon",
+                "status": true
+            },
+            {
+                "key": "transfer-history",
+                "label": "Transfer History",
+                "icon": "DocumentTextIcon",
+                "status": true
+            },
+            {
+                "key": "convert-fund",
+                "label": "Fund Convert",
+                "icon": "ArrowRightCircleIcon",
+                "status": true
+            },
+            {
+                "key": "convert-history",
+                "label": "Convert History",
+                "icon": "DocumentChartBarIcon",
+                "status": true
+            }
+        ]
+    },
+    {
+        "key": "",
+        "label": "My team",
+        "icon": "TrademarkIcon",
+        "status": true,
+        "children": [
+            {
+                "key": "direct",
+                "label": "Direct Team",
+                "icon": "ShoppingCartIcon",
+                "status": true
+            },
+            {
+                "key": "generation-team",
+                "label": "My Generation",
+                "icon": "ClockIcon",
+                "status": true
+            },
+            {
+                "key": "matrix-team",
+                "label": "Team Matrix",
+                "icon": "CogIcon",
+                "status": true
+            },
+            {
+                "key": "autopool-team",
+                "label": "Autoppol",
+                "icon": "BellIcon",
+                "status": true
+            }
+        ]
+    },
+    {
+        "key": "",
+        "label": "Top Up",
+        "icon": "SettingsIcon",
+        "status": true,
+        "children": [
+            {
+                "key": "investment",
+                "label": "Activate",
+                "icon": "ShieldIcon",
+                "status": true
+            },
+            {
+                "key": "reinvestment",
+                "label": "Upgrade",
+                "icon": "BellIcon",
+                "status": true
+            }
+        ]
+    },
+    {
+        "key": "income-report",
+        "label": "Income Report",
+        "icon": "QuestionIcon",
+        "status": true
+    },
+    {
+        "key": "withdraw-report",
+        "label": "Withdraw Report",
+        "icon": "QuestionCircleIcon",
+        "status": true
+    },
+    {
+        "key": "orders",
+        "label": "My Orders",
+        "icon": "QuestionCircleIcon",
+        "status": true
+    },
+    {
+        "key": "news",
+        "label": "News & Events",
+        "icon": "QuestionCircleIcon",
+        "status": true
+    },
+    {
+        "key": "suport",
+        "label": "Help & Support",
+        "icon": "QuestionCircleIcon",
+        "status": true
+    },
+    {
+        "key": "logout",
+        "label": "Logout",
+        "icon": "LogOutIcon",
+        "status": true
+    }
+]

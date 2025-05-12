@@ -1,0 +1,41 @@
+[
+    {
+        "key": "bank_name",
+        "label": "Bank Name",
+        "status": false
+    },
+    {
+        "key": "account_nummber",
+        "label": "Bank Account Number",
+        "status": true
+    },
+    {
+        "key": "swift_code",
+        "label": "Bank SWIFT Code Number",
+        "status": true
+    },
+    {
+        "key": "ifsc",
+        "label": "Bank IFSC Code",
+        "status": false
+    },
+    {
+        "key": "name",
+        "label": "Account Holder's Name",
+        "status": true
+    },
+    {
+        "key": "type",
+        "label": "Saving",
+        "status": true
+    }
+    
+],
+
+[
+    {
+        "key": "address",
+        "label": "USDT (BEP-20) Address",
+        "status": true
+    }
+]
