@@ -101,7 +101,8 @@ export async function updateWalletBalanceBySlug(
   }
 
   const currentBalance = (await getWalletBalanceBySlug(uCode, slug)) || 0;
-  const postWalletBalance = currentBalance + amount;
+  const postWalletBalance =
+    amount >= 0 ? currentBalance + amount : currentBalance - Math.abs(amount);
 
   if (postWalletBalance < 0) {
     throw new Error(

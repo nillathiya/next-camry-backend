@@ -51,7 +51,8 @@ const IncomeTransactionSchema: Schema<IncomeTransaction> = new Schema(
     },
     txCharge: { 
       type: Number, 
-      min: 0 
+      min: 0,
+      default: 0
     },
     postWalletBalance: { 
       type: Number, 
