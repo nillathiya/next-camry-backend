@@ -95,6 +95,7 @@ export interface User {
   updatedAt: Date;
   myRank?: string;
   withdraw_status: number;
+  capping?: number;
   position: number;
   reason?: string;
   status: number;
@@ -236,6 +237,7 @@ const UserSchema = new Schema<User>(
     cryptoAddress: { type: String, trim: true },
     metadata: { type: Schema.Types.Mixed, default: {} },
     lastLogin: { type: Date, default: null },
+    capping: { type: Number, default: 0 },
     lastActivity: { type: Date, default: null },
     downlines: [{ type: Schema.Types.ObjectId, ref: "User" }],
     myRank: String,

@@ -31,7 +31,7 @@ const OrderSchema = new Schema<IOrder>(
     payOutStatus: { type: Number, default: 0 },
     amount: { type: Number },
     validity: { type: Number },
-    status: { type: Number, default: 0 },
+    status: { type: Number, default: 1 },
     billingAddress: { type: String },
     shippingAddress: { type: String },
     orderDate: { type: Date, default: Date.now },
