@@ -9,6 +9,7 @@ import moment from "moment-timezone";
 import WalletSettingsModel from "../models/walletSettings";
 import CompanyInfoModel from "../models/companyInfo";
 import PlanModel from "../models/plan";
+import RankSettingsModel from "../models/rankSettings";
 import team from "../helpers/team";
 import RankModel from "../models/rank";
 import mongoose, { mongo } from "mongoose";
@@ -258,11 +259,11 @@ export async function reward(): Promise<any[]> {
         }
         const currency = await CompanyInfoModel.findOne({ label: 'currency' });
         // fetch the array of plan from PlanModel where slug in reward it's value will be an array of fixed amounts
-        const plan = await PlanModel.findOne({ slug: 'reward' });
+        const plan = await RankSettingsModel.findOne({ slug: 'reward' });
         if (!plan) {
             throw new Error(`Plan for slug '${source}' not found or not active for users`);
         }
-        const planCondition = await PlanModel.findOne({ slug: 'reward_req_team' });
+        const planCondition = await RankSettingsModel.findOne({ slug: 'reward_req_team' });
         if (!planCondition) {
             throw new Error(`Plan condition for slug '${source}' not found or not active for users`);
         }
@@ -278,10 +279,10 @@ export async function reward(): Promise<any[]> {
             for (let i = 0; i < Math.min(myActiveTeamCount.length, planCondition.value.length); i++) {
                 const checkRankExist = await RankModel.findOne({ uCode: user._id, rank: i + 1 });
                 if (checkRankExist) continue; // Skip if rank already exists
-                const levelTeamReqCount = planCondition.value[i];
+                const levelTeamReqCount = Number(planCondition.value[i]);
                 const myActiveTeamCountValue = myActiveTeamCount[i];
                 if (myActiveTeamCountValue < levelTeamReqCount) continue; // Skip if myActiveTeamCount is not valid
-                let payable = plan.value[i];
+                let payable = Number(plan.value[i]);
                 if (payable <= 0) continue; // Skip if payable amount is not valid
                 const remainingCap = await business.remainingCap(user._id);
                 if (remainingCap <= 0 || remainingCap === undefined) continue; // Skip if remaining cap is not valid
@@ -424,11 +425,11 @@ export async function growthBooster(): Promise<any[]> {
         const updatedAt = moment.tz(timeZone).toDate();
         const currency = await CompanyInfoModel.findOne({ label: 'currency' });
         // fetch the array of plan from PlanModel where slug in growth_booster it's value will be an array of fixed amounts
-        const plan = await PlanModel.findOne({ slug: 'growth_booster' });
+        const plan = await RankSettingsModel.findOne({ slug: 'growth_booster' });
         if (!plan) {
             throw new Error(`Plan for slug '${source}' not found or not active for users`);
         }
-        const planCondition = await PlanModel.findOne({ slug: 'growth_booster_req_level_business' });
+        const planCondition = await RankSettingsModel.findOne({ slug: 'growth_booster_req_level_business' });
         if (!planCondition) {
             throw new Error(`Plan condition for slug '${source}' not found or not active for users`);
         }
@@ -437,10 +438,10 @@ export async function growthBooster(): Promise<any[]> {
             if (!myLevelBusiness || myLevelBusiness.length === 0) continue; // Skip if myLevelBusiness is not valid
             // this will be array of business of each level which we will directly compare with planCondition.value
             for (let i = 0; i < Math.min(myLevelBusiness.length, planCondition.value.length); i++) {
-                const levelBusinessReqCount = planCondition.value[i];
+                const levelBusinessReqCount = Number(planCondition.value[i]);
                 const myLevelBusinessCount = myLevelBusiness[i];
                 if (myLevelBusinessCount < levelBusinessReqCount) continue; // Skip if myLevelBusiness is not valid
-                let payable = plan.value[i];
+                let payable = Number(plan.value[i]);
                 if (payable <= 0) continue; // Skip if amount is not valid
                 const remainingCap = await business.remainingCap(user._id);
                 if (remainingCap <= 0 || remainingCap === undefined) continue; // Skip if remaining cap is not valid

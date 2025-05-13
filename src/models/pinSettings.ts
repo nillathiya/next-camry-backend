@@ -5,6 +5,7 @@ export interface IPinSettings extends Document {
   name: string;
   rateMin?: number;
   rateMax?: number;
+  description?: string;
   type?: "fix" | "range"; 
   roi?: number;
   bv?: number;
@@ -19,6 +20,7 @@ const PinSettingsSchema = new Schema<IPinSettings>(
     name: { type: String, required: true },
     rateMin: { type: Number },
     rateMax: { type: Number },
+    description: { type: String },
     type: { type: String, enum: ["fix", "range"] }, 
     roi: { type: Number },
     bv: { type: Number },

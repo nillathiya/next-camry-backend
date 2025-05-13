@@ -4,6 +4,7 @@ import common from "../helpers/common";
 import { ApiError } from "../utils/error";
 import PinSettingsModel from "../models/pinSettings";
 import { AuthenticatedRequest } from "../types";
+import OrderModel from "../models/order";
 
 export const createPinSettings = async (
   req: AuthenticatedRequest,
@@ -68,8 +69,26 @@ export const getAllPinSettings = async (
       filter.status = 1;
     }
 
-    const packages = await PinSettingsModel.find(filter);
+    
 
+    let packages = await PinSettingsModel.find(filter);
+
+    if (req.user?.role === "User") {
+      const order = await OrderModel.findOne({
+        userId: req.user.uCode,
+      }).sort({ createdAt: -1 });
+      // console.log('order', order);
+      if (order) {
+        const lastPinId = order.PinId;
+        const sortedPins = await PinSettingsModel.find({}).sort({ _id: -1 });
+          // get only ping which are greater than lastPinId
+          packages = sortedPins.filter((pin) => pin._id > lastPinId);
+          if(packages.length === 0){
+            packages = [sortedPins[0]];
+          }
+        }
+        packages = [packages[0]];
+    }
     res.status(200).json({
       success: true,
       message: "Packages retrieved successfully",

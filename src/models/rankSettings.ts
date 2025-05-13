@@ -18,7 +18,8 @@ const RankSettingsSchema: Schema<IRankSettings> = new Schema({
 
 const RankSettings: Model<IRankSettings> = mongoose.model<IRankSettings>(
   "RankSettings",
-  RankSettingsSchema
+  RankSettingsSchema,
+  "rankSettings"
 );
 
 export default RankSettings;

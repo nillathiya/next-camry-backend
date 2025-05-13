@@ -121,7 +121,7 @@ const business = {
                 return [];
             }
             const businessDetails = await OrderModel.aggregate([
-                { $match: { uCode: { $in: myTeam }, status: 1, payOutStatus: 0 } },
+                { $match: { uCode: { $in: myTeam }, status: 1 } },
                 { $group: { _id: null, totalAmount: { $sum: "$bv" } } },
             ]);
             if (businessDetails.length === 0) {
@@ -163,7 +163,7 @@ const business = {
                 return 999999999999; // if capping is not set then return max value
             }
             const myTotalCap = Number(business.myPackage(uCode)) * myMaxCapPer / 100;
-            return myTotalCap - Number(myCurrrentUsage); // myTotalCap - myCurrrentUsage;
+            return myTotalCap - Number(myTotalCap) - Number(myCurrrentUsage); // myTotalCap - myCurrrentUsage;
         } catch (error) {
             console.log(error);
             throw error;
