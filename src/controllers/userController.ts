@@ -441,7 +441,9 @@ export const checkUsername = async (
 ): Promise<void> => {
   try {
     const { username } = req.body;
+    console.log("username",username);
     const user = await UserModel.findOne({ username });
+    console.log("user",user);
     if (user) {
       res
         .status(200)

@@ -692,9 +692,8 @@ export const userFundConvert = async (
       status: 1,
       isRetrieveFund: postData.isRetrieveFund || false,
       txStatus: 1,
-      remark: `${req.user.username || "N/A"} converted $${
-        postData.amount
-      } from ${postData.fromWalletType} to ${postData.walletType}`,
+      remark: `${req.user.username || "N/A"} converted $${postData.amount
+        } from ${postData.fromWalletType} to ${postData.walletType}`,
     };
 
     const newTransaction = new FundTransactionModel(transactionPayload);
@@ -890,9 +889,8 @@ export const userFundManualWithdrawal = async (
         withdrawAmount = netWithdrawAmountUSD / avgPrice;
         remark = `${req.user.username} withdrew ${withdrawAmount.toFixed(
           6
-        )} ${pairIdentifier.slice(0, -4)} ($${netWithdrawAmountUSD}) using ${
-          withdrawMethodData.slug
-        }`;
+        )} ${pairIdentifier.slice(0, -4)} ($${netWithdrawAmountUSD}) using ${withdrawMethodData.slug
+          }`;
       } else {
         remark = `${req.user.username} withdrew $${netWithdrawAmountUSD} ${companyWithdrawalAccount.slug} using ${withdrawMethodData.slug}`;
       }
@@ -1027,7 +1025,6 @@ export const userFundWithdrawal = async (
       "debitCredit",
       "amount",
       "walletType",
-      "withdrawalAccount",
     ];
     const validation = await common.requestFieldsValidation(
       requiredFields,
@@ -1044,40 +1041,49 @@ export const userFundWithdrawal = async (
       throw new ApiError(400, "Amount must be a valid positive number");
     }
 
-    const userWithdrawalAccount = await UserWithdrawalAccount.findById(
-      postData.withdrawalAccount
-    ).populate<{ accountTypeId: IWithdrawalAccountType }>("accountTypeId");
-    if (!userWithdrawalAccount) {
-      throw new ApiError(404, "Withdrawal account not found");
-    }
-    // res.status(200).json({userWithdrawalAccount});
-    if (!userWithdrawalAccount.isActive) {
-      throw new ApiError(
-        404,
-        "Withdrawal account is not active, please choose another"
+
+    let userWithdrawalAccount;
+    let companyWithdrawalAccount;
+    let withdrawMethodData;
+    let accountTypeCheck;
+    if (postData.withdrawalAccount) {
+      userWithdrawalAccount = await UserWithdrawalAccount.findById(
+        postData.withdrawalAccount
+      ).populate<{ accountTypeId: IWithdrawalAccountType }>("accountTypeId");
+      if (!userWithdrawalAccount) {
+        throw new ApiError(404, "Withdrawal account not found");
+      }
+      // res.status(200).json({userWithdrawalAccount});
+      if (!userWithdrawalAccount.isActive) {
+        throw new ApiError(
+          404,
+          "Withdrawal account is not active, please choose another"
+        );
+      }
+
+
+      companyWithdrawalAccount = await findWithdrawalAccountId(
+        userWithdrawalAccount.accountTypeId._id as ObjectId
       );
-    }
+      // console.log("companyWithdrawalAccount", companyWithdrawalAccount);
 
-    const companyWithdrawalAccount = await findWithdrawalAccountId(
-      userWithdrawalAccount.accountTypeId._id as ObjectId
-    );
-    // console.log("companyWithdrawalAccount", companyWithdrawalAccount);
+      if (!companyWithdrawalAccount) {
+        throw new ApiError(404, "Withdrawal account not found in the system");
+      }
+      if (!companyWithdrawalAccount.isActive) {
+        throw new ApiError(404, "Withdrawal account is not active in the system");
+      }
 
-    if (!companyWithdrawalAccount) {
-      throw new ApiError(404, "Withdrawal account not found in the system");
-    }
-    if (!companyWithdrawalAccount.isActive) {
-      throw new ApiError(404, "Withdrawal account is not active in the system");
-    }
+      withdrawMethodData = await findWithdrawalMethodId(
+        companyWithdrawalAccount.methodId
+      );
+      if (!withdrawMethodData) {
+        throw new ApiError(404, "Withdrawal method not found");
+      }
+      if (!withdrawMethodData.isActive) {
+        throw new ApiError(404, "Withdrawal method is not active in the system");
+      }
 
-    const withdrawMethodData = await findWithdrawalMethodId(
-      companyWithdrawalAccount.methodId
-    );
-    if (!withdrawMethodData) {
-      throw new ApiError(404, "Withdrawal method not found");
-    }
-    if (!withdrawMethodData.isActive) {
-      throw new ApiError(404, "Withdrawal method is not active in the system");
     }
 
     const userId = req.user.uCode;
@@ -1125,21 +1131,25 @@ export const userFundWithdrawal = async (
       throw new ApiError(400, "Withdrawal amount after charge is negative");
     }
 
-    const accountTypeCheck = await WithdrawalAccountType.findById(
-      userWithdrawalAccount.accountTypeId._id
-    );
-    if (!accountTypeCheck) {
-      throw new ApiError(404, "Withdrawal account type not found");
+    if (postData.withdrawalAccount && userWithdrawalAccount) {
+      accountTypeCheck = await WithdrawalAccountType.findById(
+        userWithdrawalAccount.accountTypeId._id
+      );
+      if (!accountTypeCheck) {
+        throw new ApiError(404, "Withdrawal account type not found");
+      }
     }
 
-    if (companyWithdrawalAccount.type === "auto") {
-      const address = userWithdrawalAccount.details.get("address");
+
+
+    if (companyWithdrawalAccount && companyWithdrawalAccount.type === "auto") {
+      const address = userWithdrawalAccount?.details.get("address");
       if (!address || typeof address !== "string") {
         throw new ApiError(400, "Withdrawal address not found");
       }
 
       const pairIdentifier =
-        userWithdrawalAccount.accountTypeId?.pairIdentifier;
+        userWithdrawalAccount?.accountTypeId?.pairIdentifier;
       if (pairIdentifier) {
         const binanceResponse = await axios.get<BinanceAvgPriceResponse>(
           "https://api.binance.com/api/v3/avgPrice",
@@ -1155,16 +1165,15 @@ export const userFundWithdrawal = async (
         withdrawAmount = netWithdrawAmountUSD / avgPrice;
         remark = `${req.user.username} withdrew ${withdrawAmount.toFixed(
           6
-        )} ${pairIdentifier.slice(0, -4)} ($${netWithdrawAmountUSD}) using ${
-          withdrawMethodData.slug
-        }`;
+        )} ${pairIdentifier.slice(0, -4)} ($${netWithdrawAmountUSD}) using ${withdrawMethodData?.slug
+          }`;
       } else {
         remark = `Transaction ${postData.txType} of $${netWithdrawAmountUSD} USD for ${postData.walletType}`;
       }
 
       const sendAutoTransaction = await initiateWithdrawal({
         uuid: uniqueId,
-        chain: withdrawMethodData.slug,
+        chain: withdrawMethodData?.slug || "",
         to: address,
         token: companyWithdrawalAccount.slug,
         amount: withdrawAmount,
@@ -1255,7 +1264,7 @@ export const userFundWithdrawal = async (
         : req.body.receivernotification;
       await sendMessage(
         receiverNumber,
-        `${user.name} have sent you $${transactionPayload.amount} to your ${accountTypeCheck.name} account`
+        `${user.name} have sent you $${transactionPayload.amount} to your ${accountTypeCheck?.name} account`
       );
     }
 
@@ -1527,9 +1536,8 @@ export const adminFundTransferAndRetrieve = async (
       amount,
       method: "ADMIN_TRANSFER",
       status: 1,
-      remark: `Admin ${req.user.username || "N/A"} ${
-        debitCredit === "CREDIT" ? "credited" : "debited"
-      } $${amount} to ${username}'s ${walletType}`,
+      remark: `Admin ${req.user.username || "N/A"} ${debitCredit === "CREDIT" ? "credited" : "debited"
+        } $${amount} to ${username}'s ${walletType}`,
       reason: reason || "N/A",
     };
 
