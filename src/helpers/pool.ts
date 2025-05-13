@@ -114,6 +114,25 @@ const pool = {
             throw error;
         }
     },
+    poolParent: async (pCode: string | mongoose.Types.ObjectId): Promise<object> => {
+        try {
+            const poolId = new mongoose.Types.ObjectId(pCode);
+            const poolDetails = await PoolModel.findById(poolId);
+            if (!poolDetails) {
+                console.log(`Pool details for ID ${poolId} not found.`);
+                return {};
+            }
+            const parentDetails = await PoolModel.findById(poolDetails.parentId);
+            if (!parentDetails) {
+                console.log(`Parent details for ID ${poolDetails.parentId} not found.`);
+                return {};
+            }
+            return parentDetails;
+        } catch (error) {
+            console.log(error);
+            throw new Error('Error fetching pool parent');
+        }
+    }
 };
 
 export default pool;

@@ -1,6 +1,17 @@
+import mongoose, { mongo } from "mongoose";
 import business from "../helpers/business";
 import OrderModel from "../models/order";
 import UserModel from "../models/user";
+import pool from "../helpers/pool";
+import PlanModel from "../models/plan";
+import IncomeTransactionModel from "../models/incomeTransaction";
+import team from "../helpers/team";
+import WalletSettingsModel from "../models/walletSettings";
+import CompanyInfoModel from "../models/companyInfo";
+import moment from "moment-timezone";
+import wallet from "../helpers/wallet";
+
+const timeZone = process.env.TIMEZONE || "Asia/Kolkata";
 
 
 // user deactivation accountStatus.activeStatus changing from 1 to 0 
@@ -70,5 +81,103 @@ export async function UpdateOrderPayoutStatus() {
         }
     } catch (error) {
         console.error("Error updating order payout status:", error);
+    }
+}
+
+export async function autopoolIncome(uCode: string | mongoose.Types.ObjectId, poolType: string, pCode: string | mongoose.Types.ObjectId) {
+    try {
+        const source = `${poolType}_income`;
+        const wSettings = await WalletSettingsModel.findOne({ slug: source, status: 1 });
+        if (!wSettings) {
+            return false;
+        }
+        const incomeWallet = 'main_wallet';
+        const currency = await CompanyInfoModel.findOne({ label: 'currency' });
+        const createdAt = moment.tz(timeZone).toDate();
+        const updatedAt = moment.tz(timeZone).toDate();
+        const userId = new mongoose.Types.ObjectId(uCode);
+        const userData = await UserModel.findOne({ _id: userId });
+        if (!userData) {
+            console.log(`User with ID ${uCode} not found.`);
+            return false;
+        }
+        const parentDetails = await pool.poolParent(pCode) as { uCode: mongoose.Types.ObjectId };
+        if (!parentDetails || !parentDetails.uCode) {
+            console.log(`Parent details for ID ${pCode} are invalid or missing uCode.`);
+            return false;
+        }
+        if (!parentDetails) {
+            console.log(`Parent details for ID ${pCode} not found.`);
+            return false;
+        }
+        const plan = await PlanModel.findOne({ slug: `${poolType}_total_income` });
+        if (!plan) {
+            console.log(`Plan with slug ${poolType} not found.`);
+            return false;
+        }
+        const planCondition = await PlanModel.findOne({ slug: `${poolType}_req_team` });
+        if (!planCondition) {
+            console.log(`Plan with slug ${poolType}_req_team not found.`);
+            return false;
+        }
+        const planCondition2 = await PlanModel.findOne({ slug: `${poolType}_req_direct` });
+        if (!planCondition2) {
+            console.log(`Plan with slug ${poolType}_req_direct not found.`);
+            return false;
+        }
+        const currentPoolTeam = await pool.poolTeam(parentDetails.uCode, poolType);
+        for (let i = 0; i < Math.min(planCondition.value.length, planCondition2.value.length, plan.value.length); i++) {
+            const user = await UserModel.findOne({ _id: parentDetails.uCode });
+            if (!user) {
+                console.log(`User with ID ${parentDetails.uCode} not found.`);
+                return false;
+            }
+            // Process user for autopool income
+            const teamReq = Number(planCondition.value[i]);
+            const directReq = Number(planCondition2.value[i]);
+            let payable = Number(plan.value[i]);
+            if (payable > user.remainingCap) {
+                payable = user.remainingCap;
+            }
+            const currentLevelTeam = currentPoolTeam[i];
+            const currentLevelTeamCount = currentLevelTeam ? currentLevelTeam.length : 0;
+            const myDirects = await team.myActiveDirect(parentDetails.uCode.toString());
+            const checkTransaction = await IncomeTransactionModel.findOne({ uCode: parentDetails.uCode, response: `${i}`, source: `${poolType}_income` });
+            if (checkTransaction) {
+                continue;
+            }
+            if (currentLevelTeamCount >= teamReq && Number(myDirects.length) >= directReq && payable > 0) {
+                const currentWalletBalance = await wallet.getWalletBalanceBySlug(parentDetails.uCode.toString(), incomeWallet);
+                const postWalletBalance = currentWalletBalance ? currentWalletBalance : 0 + payable;
+                // create a IncomeTransaction
+                const incomeTransaction = {
+                    txUCode: new mongoose.Types.ObjectId(uCode),
+                    uCode: parentDetails.uCode,
+                    amount: payable,
+                    walletType: incomeWallet,
+                    source,
+                    postWalletBalance,
+                    currentWalletBalance,
+                    txType: "income",
+                    response: `${i}`,
+                    remark: `${wSettings.name} of ${currency?.value} ${payable} for level ${i}`,
+                    status: 1,
+                    createdAt: createdAt,
+                    updatedAt: updatedAt,
+                };
+                const transaction = await IncomeTransactionModel.create(incomeTransaction);
+                if (!transaction) continue; // Skip if transaction is not created
+                // update wallet balances
+                const sourceAdd = await wallet.manageWalletAmounts(user._id, source, payable);
+                if (!sourceAdd || sourceAdd.status === 0) continue; // Skip if sourceAdd is not valid
+                const walletAdd = await wallet.manageWalletAmounts(user._id, incomeWallet, payable);
+                if (!walletAdd || walletAdd.status === 0) continue; // Skip if walletAdd is not valid
+                // add capping
+                await wallet.manageWalletAmounts(user._id, 'capping', payable);
+                return true;
+            }
+        }
+    } catch (error) {
+        console.error("Error updating autopool income:", error);
     }
 }
