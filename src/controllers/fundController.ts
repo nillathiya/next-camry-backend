@@ -1534,7 +1534,7 @@ export const adminFundTransferAndRetrieve = async (
       debitCredit,
       walletType,
       amount,
-      method: "ADMIN_TRANSFER",
+      // method: "ADMIN_TRANSFER",
       status: 1,
       remark: `Admin ${req.user.username || "N/A"} ${debitCredit === "CREDIT" ? "credited" : "debited"
         } $${amount} to ${username}'s ${walletType}`,
@@ -1726,6 +1726,76 @@ export const verifyTransaction = async (
   }
 };
 
+export const createTopUP = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const { txHash, amount, userAddress } = req.body;
+  try {
+    if (!req.user) {
+      throw new ApiError(403, "Unauthorized Error");
+    }
+
+    const userId = req.user.uCode;
+
+    // Verify transaction
+    const result = await transactionHelper.verifyTransaction(
+      txHash,
+      amount,
+      userAddress
+    );
+
+    let status = result.status === "true" ? 1 : 0;
+    if (status !== 1) {
+      throw new ApiError(400, "Invalid Transaction");
+    }
+    let walletType = "fund_wallet";
+    const currentWalletBalance = await common.getBalance(userId, walletType);
+
+    // Insert transaction record in MongoDB
+    const transaction = new FundTransactionModel({
+      walletType,
+      txType: "add_fund",
+      debitCredit: "credit",
+      uCode: userId,
+      amount,
+      paymentSlip: `${amount} USDT`,
+      criptAddress: userAddress,
+      currentWalletBalance,
+      postWalletBalance: Number(currentWalletBalance) + Number(amount),
+      criptoType: "USDT",
+      status,
+      txRecord: txHash,
+      remark: status ? "Fund Added" : "Transaction Failed",
+    });
+
+    await transaction.save();
+
+    const populatedTransaction = await FundTransactionModel.findById(
+      transaction._id
+    )
+      .populate("txUCode", "name email contactNumber username")
+      .populate("uCode", "name email contactNumber username");
+
+    await common.manageWalletAmounts(
+      transaction.uCode,
+      transaction.walletType,
+      transaction.amount
+    );
+    if (status === 1) {
+      res
+        .status(200)
+        .json(
+          new ApiResponse(200, populatedTransaction, "USDT added Successfully")
+        );
+    } else {
+      throw new ApiError(400, "Transaction verification failed");
+    }
+  } catch (error) {
+    next(error);
+  }
+};
 export default {
   getAllDepositMethods,
   getAllDepositeAccounts,
