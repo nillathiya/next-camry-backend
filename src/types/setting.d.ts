@@ -17,3 +17,8 @@ export interface IWebsiteSettingsQuery {
 export interface IWalletSettingsQuery {
   status?: number;
 }
+
+
+export interface IRankSettingsQuery {
+  status?: number;
+}

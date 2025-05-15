@@ -123,7 +123,7 @@ const UserSchema = new Schema<User>(
       lowercase: true,
       trim: true,
     },
-    password: { type: String, required: true },
+    password: { type: String },
     contactNumber: { type: String, trim: true },
     username: {
       type: String,

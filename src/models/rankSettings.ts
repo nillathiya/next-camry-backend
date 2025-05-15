@@ -14,12 +14,14 @@ const RankSettingsSchema: Schema<IRankSettings> = new Schema({
   type: { type: String, trim: true },
   value: { type: [String], trim: true, default: [] },
   status: { type: Number, default: 0 },
+}, {
+  timestamps: true,
+  collection: 'rankSettings',
 });
 
 const RankSettings: Model<IRankSettings> = mongoose.model<IRankSettings>(
   "RankSettings",
   RankSettingsSchema,
-  "rankSettings"
 );
 
 export default RankSettings;

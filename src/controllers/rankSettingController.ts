@@ -3,7 +3,7 @@ import mongoose, { Types } from "mongoose";
 import RankSettings, { IRankSettings } from "../models/rankSettings"; // Adjust path to your model
 import { ApiError } from "../utils/error";
 import { ApiResponse } from "../utils/response";
-import { AuthenticatedRequest } from "../types";
+import { AuthenticatedRequest, IRankSettingsQuery } from "../types";
 import common from "../helpers/common";
 import UserModel from "../models/user";
 import businessUtils from "../helpers/business";
@@ -136,16 +136,16 @@ export const getRankSettings = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
+  const {status}=req.query
   try {
-    const filter: { status?: number } = {};
-    if (req.query.status) {
-      filter.status = Number(req.query.status);
+    const query:IRankSettingsQuery = {};
+    if (status) {
+      query.status = Number(status);
     }
 
-    const rankSettings = await RankSettings.find(filter).sort({
-      createdAt: -1,
-    });
-
+    const rankSettings = await RankSettings.find({})
+    console.log("rankSettings",rankSettings);
+    
     res
       .status(200)
       .json(
