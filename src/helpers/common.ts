@@ -16,6 +16,8 @@ interface CommonUtils {
   ) => Promise<{ status: number; message: string }>;
 
   getBalance: (userId: string, walletSlug: string) => Promise<Number>;
+
+  generateSlug:(title:string)=>Promise<string>;
 }
 
 const common: CommonUtils = {
@@ -163,6 +165,10 @@ const common: CommonUtils = {
       return 0;
     }
   },
+
+  generateSlug:async(title:string)=>{
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+  }
 };
 
 export default common;

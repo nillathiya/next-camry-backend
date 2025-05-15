@@ -1377,7 +1377,7 @@ export const getAllIncomeTransactions = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { status, txType } = req.query;
+    const { status, txType,source } = req.query;
     console.log("User", req.user)
 
     if (!req.user) {
@@ -1393,6 +1393,9 @@ export const getAllIncomeTransactions = async (
     }
     if (txType) {
       query.txType = txType;
+    }
+    if(source){
+      query.source=source
     }
 
     console.log("query", query);
@@ -1750,7 +1753,7 @@ export const getIncomeInfo = async (
     }
     const planType = planSetting.value[0] as string;
 
-    const walletSettings: WalletSettings[] = await findWalletSettings({ [planType.toLowerCase()]: 1 });
+    const walletSettings: WalletSettings[] = await findWalletSettings({ [planType.toLowerCase()]: 1, type: 'income' });
     if (!walletSettings?.length) {
       throw new ApiError(404, "Wallet settings not found for plan: " + planType);
     }
@@ -1766,8 +1769,8 @@ export const getIncomeInfo = async (
       incomeInfo = usersWallets.reduce((acc, wallet) => {
         requiredIncomeColumns.forEach((column) => {
           const value = wallet[column as keyof IWallet] || 0;
-          const slug = slugMap[column!]; 
-          acc[slug] = (acc[slug] || 0) + value; 
+          const slug = slugMap[column!];
+          acc[slug] = (acc[slug] || 0) + value;
         });
         return acc;
       }, {} as Record<string, number>);

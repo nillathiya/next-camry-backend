@@ -4,43 +4,10 @@ import RankSettings, { IRankSettings } from "../models/rankSettings"; // Adjust 
 import { ApiError } from "../utils/error";
 import { ApiResponse } from "../utils/response";
 import { AuthenticatedRequest } from "../types";
-
-// Assuming these are typed elsewhere; minimal typing here
-interface IUser extends Document {
-  _id: Types.ObjectId;
-  myRank?: number;
-}
-
-interface IPlan extends Document {
-  // Define Plan fields if needed
-}
-
-// Mock types for helpers (replace with actual types if available)
-const businessUtils = {
-  myPackage: async (userId: Types.ObjectId): Promise<number> => 0,
-  getTopLegs: async (userId: Types.ObjectId): Promise<number[]> => [],
-};
-
-const team = {
-  myActiveDirects: async (
-    userId: Types.ObjectId
-  ): Promise<Types.ObjectId[]> => [],
-  myActivegenerationWtihPersonal: async (
-    userId: Types.ObjectId,
-    depth: number
-  ): Promise<Types.ObjectId[]> => [],
-};
-
-const common = {
-  requestFieldsValidation: async <T>(
-    fields: string[],
-    data: T
-  ): Promise<{ status: boolean; missingFields?: string[] }> => ({
-    status: true,
-  }),
-  generateSlug: (title: string): string =>
-    title.toLowerCase().replace(/\s+/g, "-"),
-};
+import common from "../helpers/common";
+import UserModel from "../models/user";
+import businessUtils from "../helpers/business";
+import team from "../helpers/team";
 
 // Request body interfaces
 interface CreateRankSettingBody {
@@ -93,7 +60,7 @@ export const createRankSetting = async (
       throw new ApiError(400, "Title is required and must be a string");
     }
 
-    const slug = common.generateSlug(title);
+    const slug = await common.generateSlug(title);
 
     const newSetting = new RankSettings({ title, slug, value });
     await newSetting.save();
@@ -136,7 +103,7 @@ export const updateRankSetting = async (
     }
 
     if (updatedData.title) {
-      updatedData.slug = common.generateSlug(updatedData.title);
+      updatedData.slug = await common.generateSlug(updatedData.title);
     }
 
     const updatedSetting = await RankSettings.findByIdAndUpdate(
@@ -290,49 +257,56 @@ export const saveRow = async (
 };
 
 // Get user rank and team metrics
-// export const getUserRankAndTeamMetrics = async (
-//   req: AuthenticatedRequest,
-//   res: Response,
-//   next: NextFunction
-// ): Promise<void> => {
-//   try {
-//     const user = await User.findById(req.user?._id);
-//     if (!user) {
-//       throw new ApiError(404, "User not found");
-//     }
-//     const userId = user._id;
+export const getUserRankAndTeamMetrics = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      throw new ApiError(403, "Unauthorized Access");
+    }
+    const user = await UserModel.findById(req.user.uCode);
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+    const userId = user._id;
 
-//     const rankSettings = await RankSettings.find();
-//     const selfPackage = await businessUtils.myPackage(userId);
-//     const myActives = await team.myActiveDirects(userId);
-//     const myDirectTeam = myActives.length;
-//     const directBusiness = await businessUtils.myPackage(myActives);
-//     const activeGeneration = await team.myActivegenerationWtihPersonal(
-//       userId,
-//       5
-//     );
-//     const totalTeamSize = activeGeneration.length;
-//     const topLegs = await businessUtils.getTopLegs(userId);
-//     const totalTeamBusiness = topLegs.reduce(
-//       (sum: number, b: number) => sum + b,
-//       0
-//     );
+    const rankSettings = await RankSettings.find();
+    const selfPackage = await businessUtils.myPackage(userId);
+    console.log("selfPackage", selfPackage);
 
-//     const rankData = {
-//       rank: user.myRank || 0,
-//       self_business: selfPackage,
-//       direct_team: myDirectTeam,
-//       direct_business: directBusiness,
-//       total_team_size: totalTeamSize,
-//       total_team_business: totalTeamBusiness,
-//     };
+    const myActives = await team.myActiveDirect(userId);
+    console.log("myActives", myActives);
 
-//     res
-//       .status(200)
-//       .json(
-//         new ApiResponse(200, rankData, "Rank settings fetched successfully")
-//       );
-//   } catch (error) {
-//     next(error);
-//   }
-// };
+    const myDirectTeam = myActives.length;
+    const directBusiness = await businessUtils.myActiveDirectBusiness(userId);
+    console.log("directBusiness", directBusiness);
+
+    const activeGeneration = await team.myActiveTeam(
+      userId,
+      5
+    );
+    console.log("activeGeneration",activeGeneration);
+    
+    const totalTeamSize = activeGeneration.length;
+    const totalTeamBusiness = await businessUtils.myActiveTeamBusiness(userId);
+    
+    const rankData = {
+      rank: user.myRank || 0,
+      self_business: selfPackage,
+      direct_team: myDirectTeam,
+      direct_business: directBusiness,
+      total_team_size: totalTeamSize,
+      total_team_business: totalTeamBusiness,
+    };
+
+    res
+      .status(200)
+      .json(
+        new ApiResponse(200, rankData, "Rank settings fetched successfully")
+      );
+  } catch (error) {
+    next(error);
+  }
+};

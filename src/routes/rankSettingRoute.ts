@@ -6,7 +6,7 @@ import {
   deleteRankSetting,
   deleteRow,
   saveRow,
-  //   getUserRankAndTeamMetrics,
+  getUserRankAndTeamMetrics,
 } from "../controllers/rankSettingController";
 import auth from "../middlewares/auth";
 
@@ -18,6 +18,6 @@ router.put("/:id", auth, updateRankSetting);
 router.delete("/:id", auth, deleteRankSetting);
 router.post("/delete-row", auth, deleteRow);
 router.post("/save-row", auth, saveRow);
-// router.get('/metrics', isAuthenticated, getUserRankAndTeamMetrics);
+router.get('/user/rank-and-team-metrics', auth, getUserRankAndTeamMetrics);
 
 export default router;
