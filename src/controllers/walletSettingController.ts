@@ -87,7 +87,7 @@ export async function getWalletSettings(
         new ApiResponse(
           200,
           settings,
-          "Website settings retrieved successfully"
+          "Wallet settings retrieved successfully"
         )
       );
   } catch (error) {

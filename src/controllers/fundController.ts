@@ -11,7 +11,7 @@ import { promises } from "dns";
 import { ObjectId } from "mongodb";
 import common from "../helpers/common";
 import UserModel from "../models/user";
-import WalletModel from "../models/wallet";
+import WalletModel, { IWallet } from "../models/wallet";
 import { manageWalletAmounts, getWalletBalanceBySlug } from "../helpers/wallet";
 import { AuthenticatedRequest } from "../types";
 import IncomeTransactionModel from "../models/incomeTransaction";
@@ -23,6 +23,7 @@ import WithdrawalAccountType, {
 import { findWithdrawalMethodId } from "../models/WithdrawalMethod";
 import { initiateWithdrawal } from "../helpers/ctpeway";
 import settings, {
+  fetchAdminSettingsBySlug,
   fetchAllUserSettings,
   fetchUserSettingsBySlug,
 } from "../helpers/settings";
@@ -37,6 +38,7 @@ import { title } from "process";
 import { del } from "request-promise";
 import { sendMessage } from "../utils/whatsapp";
 import transactionHelper from "../helpers/transaction";
+import { findWalletSettings, WalletSettings } from "../models/walletSettings";
 
 // Helper function to validate ObjectId
 const isValidObjectId = (id: string): boolean => {
@@ -1375,19 +1377,25 @@ export const getAllIncomeTransactions = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const postData = req.body;
+    const { status, txType } = req.query;
+    console.log("User", req.user)
 
-    if (!req.user || req.user.role !== "Admin") {
+    if (!req.user) {
       throw new ApiError(401, "Unauthorized: User not found");
     }
 
     const query: any = {};
-    if (postData.status !== undefined) {
-      query.status = postData.status;
+    if (req.user.role === "User") {
+      query.uCode = new mongoose.Types.ObjectId(req.user.uCode);
     }
-    if (postData.txType !== "all") {
-      query.txType = postData.txType;
+    if (status) {
+      query.status = status;
     }
+    if (txType) {
+      query.txType = txType;
+    }
+
+    console.log("query", query);
 
     const allTransactions = await IncomeTransactionModel.find(query)
       .populate("txUCode", "username name")
@@ -1726,72 +1734,64 @@ export const verifyTransaction = async (
   }
 };
 
-export const createTopUP = async (
+export const getIncomeInfo = async (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ) => {
-  const { txHash, amount, userAddress } = req.body;
   try {
     if (!req.user) {
-      throw new ApiError(403, "Unauthorized Error");
+      throw new ApiError(403, "Unauthorized Access");
     }
 
-    const userId = req.user.uCode;
-
-    // Verify transaction
-    const result = await transactionHelper.verifyTransaction(
-      txHash,
-      amount,
-      userAddress
-    );
-
-    let status = result.status === "true" ? 1 : 0;
-    if (status !== 1) {
-      throw new ApiError(400, "Invalid Transaction");
+    const planSetting = await fetchAdminSettingsBySlug("adminSettings", "plan_type");
+    if (!planSetting?.value || !Array.isArray(planSetting.value)) {
+      throw new ApiError(400, "Invalid Plan");
     }
-    let walletType = "fund_wallet";
-    const currentWalletBalance = await common.getBalance(userId, walletType);
+    const planType = planSetting.value[0] as string;
 
-    // Insert transaction record in MongoDB
-    const transaction = new FundTransactionModel({
-      walletType,
-      txType: "add_fund",
-      debitCredit: "credit",
-      uCode: userId,
-      amount,
-      paymentSlip: `${amount} USDT`,
-      criptAddress: userAddress,
-      currentWalletBalance,
-      postWalletBalance: Number(currentWalletBalance) + Number(amount),
-      criptoType: "USDT",
-      status,
-      txRecord: txHash,
-      remark: status ? "Fund Added" : "Transaction Failed",
-    });
+    const walletSettings: WalletSettings[] = await findWalletSettings({ [planType.toLowerCase()]: 1 });
+    if (!walletSettings?.length) {
+      throw new ApiError(404, "Wallet settings not found for plan: " + planType);
+    }
 
-    await transaction.save();
+    const slugMap = Object.fromEntries(walletSettings.map(ws => [ws.column!, ws.slug!]));
 
-    const populatedTransaction = await FundTransactionModel.findById(
-      transaction._id
-    )
-      .populate("txUCode", "name email contactNumber username")
-      .populate("uCode", "name email contactNumber username");
+    let incomeInfo: Record<string, number> = {};
 
-    await common.manageWalletAmounts(
-      transaction.uCode,
-      transaction.walletType,
-      transaction.amount
-    );
-    if (status === 1) {
-      res
-        .status(200)
-        .json(
-          new ApiResponse(200, populatedTransaction, "USDT added Successfully")
-        );
+    if (req.user.role === "Admin") {
+      const usersWallets: IWallet[] = await WalletModel.find();
+      const requiredIncomeColumns = walletSettings.map(setting => setting.column).filter(Boolean);
+
+      incomeInfo = usersWallets.reduce((acc, wallet) => {
+        requiredIncomeColumns.forEach((column) => {
+          const value = wallet[column as keyof IWallet] || 0;
+          const slug = slugMap[column!]; 
+          acc[slug] = (acc[slug] || 0) + value; 
+        });
+        return acc;
+      }, {} as Record<string, number>);
+
+    } else if (req.user.role === "User") {
+      const userWallet: IWallet | null = await WalletModel.findOne({ uCode: req.user.uCode });
+      if (!userWallet) {
+        throw new ApiError(404, "User wallet not found");
+      }
+
+      incomeInfo = walletSettings.reduce((acc, setting) => {
+        const column = setting.column!;
+        const slug = setting.slug!;
+        acc[slug] = userWallet[column as keyof IWallet] || 0;
+        return acc;
+      }, {} as Record<string, number>);
+
     } else {
-      throw new ApiError(400, "Transaction verification failed");
+      throw new ApiError(403, "Invalid Role");
     }
+
+    res.status(200).json(
+      new ApiResponse(200, incomeInfo, "Income info retrieved successfully")
+    );
   } catch (error) {
     next(error);
   }
@@ -1812,4 +1812,5 @@ export default {
   adminFundTransferAndRetrieve,
   updateUserFundTransaction,
   verifyTransaction,
+  getIncomeInfo,
 };

@@ -69,26 +69,30 @@ export const getAllPinSettings = async (
       filter.status = 1;
     }
 
-    
-
-    let packages = await PinSettingsModel.find(filter);
+    let packages = await PinSettingsModel.find(filter).sort({ _id: 1 });
 
     if (req.user?.role === "User") {
       const order = await OrderModel.findOne({
-        userId: req.user.uCode,
+        uCode: req.user.uCode,
       }).sort({ createdAt: -1 });
-      // console.log('order', order);
+
       if (order) {
-        const lastPinId = order.PinId;
-        const sortedPins = await PinSettingsModel.find({}).sort({ _id: -1 });
-          // get only ping which are greater than lastPinId
-          packages = sortedPins.filter((pin) => pin._id > lastPinId);
-          if(packages.length === 0){
-            packages = [sortedPins[0]];
-          }
+        const lastPinId = order.pinId.toString();
+
+        const index = packages.findIndex(
+          (pin) => pin._id.toString() === lastPinId
+        );
+
+        if (index >= 0 && index < packages.length - 1) {
+          packages = [packages[index + 1]];
+        } else {
+          packages = [packages[packages.length - 1]];
         }
+      } else {
         packages = [packages[0]];
+      }
     }
+
     res.status(200).json({
       success: true,
       message: "Packages retrieved successfully",
@@ -98,6 +102,7 @@ export const getAllPinSettings = async (
     next(error);
   }
 };
+
 
 export const updatePinSettings = async (
   req: AuthenticatedRequest,

@@ -8,12 +8,19 @@ type SettingsModel =
   | "websiteSettings"
   | "walletSettings";
 
+interface Item {
+  key: string;
+  label: string;
+  icon: string;
+  status: boolean;
+  children?: Item[];
+}
 export interface Settings {
   _id?: ObjectId;
   name?: string;
   title?: string;
   slug?: string;
-  value?: string[] | number | string;
+  value?: Item[] | boolean | number | string | string[];
   description?: string;
   adminStatus: number;
   status: number;

@@ -37,7 +37,7 @@ async function configureRouter(): Promise<Router> {
   router.post("/send-otp", auth, userController.sendOtpToUser);
   router.post("/send-critical-otp", auth, userController.sendCriticalOtp);
   router.post("/verify-otp", auth, userController.verifyUserOtp);
-  router.post("/generation-tree",auth, userController.getUserGenerationTree);
+  router.post("/generation-tree", auth, userController.getUserGenerationTree);
   router.get("/list/directs", auth, userController.getUserDirects);
 
   router.post(

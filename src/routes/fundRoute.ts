@@ -36,6 +36,7 @@ router.post(
 router.post("/withdrawal/user", auth, fundController.userFundWithdrawal);
 router.put("/withdrawal/user/:id", auth, fundController.updateUserWithdrawal);
 router.get("/income", auth, fundController.getAllIncomeTransactions);
+router.get("/income/info", auth, fundController.getIncomeInfo);
 router.get("/withdrawals", auth, fundController.getAllWithdrawalTransactions);
 
 export default router;

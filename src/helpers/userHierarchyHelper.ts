@@ -122,7 +122,7 @@ const getUserHierarchy = async (
   let planType: string | null = null;
 
   if (setting?.value && Array.isArray(setting.value)) {
-    planType = setting.value[0];
+    planType = setting.value[0] as string;
   }
 
   const validPlanTypes = ["universal", "binary", "matrix"] as const;
@@ -157,6 +157,6 @@ const getUserHierarchy = async (
   return isRootIncluded ? downline : [rootUser, ...downline];
 };
 
-const getUserDirects = () => {};
+const getUserDirects = () => { };
 
 export { getUserHierarchy };
