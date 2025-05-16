@@ -12,15 +12,20 @@ export interface IPool extends Document {
 const PoolSchema: Schema<IPool> = new Schema(
     {
         uCode: { type: Schema.Types.ObjectId, ref: "User", required: true },
-        poolId: { type: String, required: true},
+        poolId: { type: String, required: true },
         parentId: { type: Schema.Types.ObjectId, ref: "Pool" },
-        poolType: { type: String, required: true},
-        poolPosition: { type: Number, required: true}
+        poolType: { type: String, required: true },
+        poolPosition: { type: Number, required: true }
     },
     {
         timestamps: true,
     }
 );
+
+PoolSchema.index({ uCode: 1 });
+PoolSchema.index({ parentId: 1 });
+PoolSchema.index({ poolType: 1 });
+PoolSchema.index({ uCode: 1, poolType: 1 });
 
 const Pool: Model<IPool> = mongoose.model<IPool>(
     "Pools",

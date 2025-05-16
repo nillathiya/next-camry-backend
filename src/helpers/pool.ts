@@ -1,4 +1,4 @@
-import PoolModel from '../models/pool';
+import PoolModel, { IPool } from '../models/pool';
 import mongoose from 'mongoose';
 import { fetchAdminSettingsBySlug } from './settings';
 import UserModel from '../models/user';
@@ -49,23 +49,35 @@ const pool = {
         }
     },
 
-    poolRegister: async (uCode: string | mongoose.Types.ObjectId, poolType: string, parentId: string): Promise<object> => {
+    poolRegister: async (uCode: string | mongoose.Types.ObjectId, poolType: string): Promise<IPool | null> => {
         try {
             const legsSetting = await fetchAdminSettingsBySlug('adminSettings', 'autopool_legs');
-            if (!legsSetting) return {};
-            const pinSetting = await PinSettingsModel.findOne({poolType});
-            if (!pinSetting) return {};
+            console.log("legsSetting", legsSetting);
+
+            if (!legsSetting) return null;
+            // const pinSetting = await PinSettingsModel.findOne({ poolType });
+            // console.log("pinSetting",pinSetting);
+
+            // if (!pinSetting) return null
+            const existedPool = await PoolModel.findOne(({ poolType }));
+            console.log("pool", existedPool);
+
+            if (!existedPool) return null
+
             const poolParent = await pool.nextPoolParent(null, poolType) as { _id: mongoose.Types.ObjectId };
-            if (!poolParent) return {}; 
+            console.log("poolParent", poolParent);
+
+            if (!poolParent) return null;
             let currentPosition = 0;
             const positionDet = await PoolModel.find({ parentId: poolParent?._id });
             currentPosition = positionDet.length;
             const nextPosition = currentPosition + 1;
-            if (Number(legsSetting.value) < nextPosition) return {};
+            if (Number(legsSetting.value) < nextPosition) return null;
             // create PoolModel Entry
             const newPoolEntry = {
                 uCode: new mongoose.Types.ObjectId(uCode),
-                poolId: pinSetting.poolId,
+                // poolId: pinSetting.poolId,
+                poolId: existedPool.poolId,
                 parentId: poolParent?._id,
                 poolType,
                 poolPosition: nextPosition
@@ -78,40 +90,81 @@ const pool = {
             throw error;
         }
     },
-
-    nextPoolParent: async (uCode: string | mongoose.Types.ObjectId | null, poolType: string): Promise<object> => {
+    nextPoolParent: async (uCode: string | mongoose.Types.ObjectId | null, poolType: string): Promise<IPool | null> => {
         try {
             const legsSetting = await fetchAdminSettingsBySlug('adminSettings', 'autopool_legs');
-            let nextParentDetails = await PoolModel.findOne({});
-            
-            if (!legsSetting) return [];
+            if (!legsSetting) {
+                console.error(`Autopool legs setting not found for poolType: ${poolType}`);
+                return null;
+            }
+            const maxLegs = Number(legsSetting.value);
+            if (isNaN(maxLegs) || maxLegs <= 0) {
+                console.error(`Invalid autopool legs value: ${legsSetting.value}`);
+                return null;
+            }
+
+            let nextParentDetails: IPool | null = null;
+
             if (!uCode) {
-                const filledUpLastParent = await PoolModel.findOne({ poolPosition: Number(legsSetting.value), poolType }).select('_id').sort({_id: -1});
-                if (filledUpLastParent) {
-                    nextParentDetails = await PoolModel.findOne({ _id: {$gt: filledUpLastParent._id}});
+                const eligibleParents = await PoolModel.aggregate([
+                    {
+                        $match: { poolType },
+                    },
+                    {
+                        $lookup: {
+                            from: 'pools',
+                            localField: '_id',
+                            foreignField: 'parentId',
+                            as: 'children',
+                        },
+                    },
+                    {
+                        $match: {
+                            $expr: { $lt: [{ $size: '$children' }, maxLegs] },
+                        },
+                    },
+                    {
+                        $sort: { _id: 1 },
+                    },
+                    {
+                        $limit: 1,
+                    },
+                ]);
+
+                console.log("nextParentDetails", nextParentDetails);
+
+                nextParentDetails = eligibleParents.length > 0 ? eligibleParents[0] : null;
+
+                if (!nextParentDetails) {
+                    const firstPoolEntry = await PoolModel.findOne({ poolType })
+                        .sort({ _id: 1 })
+                        .lean<IPool>();
+                    nextParentDetails = firstPoolEntry || null;
                 }
             } else {
-                const sponsor = await UserModel.findOne({_id: new mongoose.Types.ObjectId(uCode)});
+                const sponsor = await UserModel.findOne({ _id: new mongoose.Types.ObjectId(uCode) });
+                if (!sponsor) {
+                    console.error(`Sponsor not found for uCode: ${uCode}`);
+                    return null;
+                }
                 const sponsorPoolDetail = await PoolModel.findOne({ uCode: sponsor._id, poolType });
                 if (sponsorPoolDetail) {
                     const sponsorPoolTeam = await pool.poolTeam(sponsor._id, poolType);
-                    // notmalize sponsorPoolTeam in a single array of ucodes
                     const normalizedSponsorPoolTeam = sponsorPoolTeam.flat();
                     for (const poolEntry of normalizedSponsorPoolTeam) {
-                        // Process each pool entry
-                        const downs = await PoolModel.find({parentId: new mongoose.Types.ObjectId(poolEntry)});
-                        if (downs.length < Number(legsSetting.value)) {
-                            nextParentDetails = await PoolModel.findOne({ _id: new mongoose.Types.ObjectId(poolEntry)});
+                        const downs = await PoolModel.find({ parentId: new mongoose.Types.ObjectId(poolEntry) });
+                        if (downs.length < maxLegs) {
+                            nextParentDetails = await PoolModel.findOne({ _id: new mongoose.Types.ObjectId(poolEntry) }).lean<IPool>();
                             break;
                         }
                     }
                 }
             }
-            if (!nextParentDetails) return [];
-           return nextParentDetails;
+
+            return nextParentDetails || null;
         } catch (error) {
-            console.log(error);
-            throw error;
+            console.error(`Error finding next pool parent for uCode: ${uCode}, poolType: ${poolType}`, error);
+            throw new Error('Failed to find next pool parent');
         }
     },
     poolParent: async (pCode: string | mongoose.Types.ObjectId): Promise<object> => {

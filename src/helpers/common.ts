@@ -12,10 +12,10 @@ interface CommonUtils {
   manageWalletAmounts: (
     userId: string,
     slug: string,
-    amount: Number
+    amount: number
   ) => Promise<{ status: number; message: string }>;
 
-  getBalance: (userId: string, walletSlug: string) => Promise<Number>;
+  getBalance: (userId: string, walletSlug: string) => Promise<number>;
 
   generateSlug:(title:string)=>Promise<string>;
 }
