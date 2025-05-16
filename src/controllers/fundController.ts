@@ -1381,7 +1381,7 @@ export const getAllIncomeTransactions = async (
     console.log("User", req.user)
 
     if (!req.user) {
-      throw new ApiError(401, "Unauthorized: User not found");
+      throw new ApiError(403, "Unauthorized: User not found");
     }
 
     const query: any = {};
