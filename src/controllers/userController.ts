@@ -29,6 +29,7 @@ import { signJWT, verifyJWT } from "../helpers/auth";
 import { fetchUserSettingsBySlug } from "../helpers/settings";
 import { isValidObjectId } from "mongoose";
 import { ObjectId } from "mongodb";
+import team from "../helpers/team";
 
 const SALT_ROUNDS = 10;
 
@@ -441,9 +442,9 @@ export const checkUsername = async (
 ): Promise<void> => {
   try {
     const { username } = req.body;
-    console.log("username",username);
+    console.log("username", username);
     const user = await UserModel.findOne({ username });
-    console.log("user",user);
+    console.log("user", user);
     if (user) {
       res
         .status(200)
@@ -665,23 +666,6 @@ export const updateUser = async (
     res
       .status(200)
       .json(new ApiResponse(200, users, "Users fetched successfully"));
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const getUserById = async (
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  const { id } = req.params;
-  try {
-    const user = await UserModel.findById(id);
-    if (!user) {
-      throw new ApiError(404, "User not found");
-    }
-    res.status(200).json(new ApiResponse(200, user, "Get user successfully"));
   } catch (error) {
     next(error);
   }
@@ -999,6 +983,57 @@ export const checkWallet = async (
     next(error);
   }
 };
+export const getUserTeamMetrics = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      throw new ApiError(403, "Unauthorized Access");
+    }
+    const user = await UserModel.findById(req.user.uCode);
+    if (!user) {
+      throw new ApiError(404, "User Not Found");
+    }
+
+    const totalDirectsResult = await team.myDirect(req.user.uCode);
+    const activeDirectsResult = await team.myActiveDirect(req.user.uCode);
+
+    const userTotalDirects: number = Array.isArray(totalDirectsResult)
+      ? totalDirectsResult.length
+      : 0;
+    const userActiveDirects: number = Array.isArray(activeDirectsResult)
+      ? activeDirectsResult.length
+      : 0;
+    const userInActiveDirects: number = userTotalDirects - userActiveDirects;
+    const allUsers = await getUserHierarchy(user);
+
+    console.log("allUsers", allUsers);
+    const userTotalGeneration: number = Array.isArray(allUsers)
+      ? allUsers.length - 1
+      : 0;
+
+    const teamMetric = {
+      userTotalDirects,
+      userActiveDirects,
+      userInActiveDirects,
+      userTotalGeneration,
+    };
+
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          teamMetric,
+          `User team metrics fetched successfully`
+        )
+      );
+  } catch (error) {
+    next(error);
+  }
+};
 
 export default {
   adminRegister,
@@ -1011,7 +1046,6 @@ export default {
   userTopUp,
   getOrders,
   getUsers,
-  getUserById,
   getUserCryptoDepositAddress,
   sendOtpToUser,
   verifyUserOtp,
@@ -1019,4 +1053,5 @@ export default {
   getUserDirects,
   sendCriticalOtp,
   checkWallet,
+  getUserTeamMetrics,
 };

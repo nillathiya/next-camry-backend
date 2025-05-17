@@ -33,7 +33,6 @@ async function configureRouter(): Promise<Router> {
   );
   router.get("/orders", auth, userController.getOrders);
   router.get("/", auth, userController.getUsers);
-  router.get("/:id", auth, userController.getUserById);
   router.post("/send-otp", auth, userController.sendOtpToUser);
   router.post("/send-critical-otp", auth, userController.sendCriticalOtp);
   router.post("/verify-otp", auth, userController.verifyUserOtp);
@@ -46,6 +45,8 @@ async function configureRouter(): Promise<Router> {
     upload.single("profilePicture"),
     userController.editProfile
   );
+
+  router.get("/team-metrics", auth, userController.getUserTeamMetrics);
 
   return router;
 }

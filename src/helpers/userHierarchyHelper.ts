@@ -15,10 +15,13 @@ interface UnilevelHierarchyResult {
   downline: IUserHierarchy[];
 }
 
+// Default maximum depth for full hierarchy (arbitrarily large to approximate no limit)
+const DEFAULT_MAX_DEPTH = 1000;
+
 // Fetch unilevel hierarchy using $graphLookup
 const getUnilevelHierarchy = async (
   userId: Types.ObjectId,
-  maxDepth: number
+  maxDepth: number = DEFAULT_MAX_DEPTH
 ): Promise<IUserHierarchy[]> => {
   const hierarchy = await UserModel.aggregate([
     {
@@ -31,9 +34,8 @@ const getUnilevelHierarchy = async (
         connectFromField: "_id",
         connectToField: "sponsorUCode",
         as: "downline",
-        maxDepth: maxDepth - 1,
+        maxDepth: maxDepth - 1, // MongoDB $graphLookup requires non-negative integer
         depthField: "depth",
-        // Restrict cycles by tracking visited nodes
         restrictSearchWithMatch: { _id: { $ne: userId } },
       },
     },
@@ -74,10 +76,11 @@ const getUnilevelHierarchy = async (
 
   return hierarchy.filter((item) => item); // Remove null/undefined entries
 };
+
 // Fetch binary hierarchy using leftChild and rightChild
 const getBinaryHierarchy = async (
   userIds: Types.ObjectId[],
-  maxDepth: number,
+  maxDepth: number = DEFAULT_MAX_DEPTH,
   currentDepth: number = 0
 ): Promise<IUserHierarchy[]> => {
   if (currentDepth >= maxDepth || !userIds.length) return [];
@@ -116,7 +119,7 @@ const getBinaryHierarchy = async (
 // Main function to fetch hierarchy based on planType
 const getUserHierarchy = async (
   user: User,
-  maxDepth: number
+  maxDepth?: number // Make maxDepth optional
 ): Promise<IUserHierarchy[]> => {
   const setting = await fetchAdminSettingsBySlug("adminSettings", "plan_type");
   let planType: string | null = null;
@@ -124,6 +127,8 @@ const getUserHierarchy = async (
   if (setting?.value && Array.isArray(setting.value)) {
     planType = setting.value[0] as string;
   }
+
+  console.log("planType",planType);
 
   const validPlanTypes = ["universal", "binary", "matrix"] as const;
 
@@ -157,6 +162,21 @@ const getUserHierarchy = async (
   return isRootIncluded ? downline : [rootUser, ...downline];
 };
 
-const getUserDirects = () => { };
+// Placeholder for getUserDirects
+const getUserDirects = async (userId: Types.ObjectId): Promise<IUserHierarchy[]> => {
+  // Example implementation: Fetch direct downline users
+  const directs = await UserModel.find({ sponsorUCode: userId }).select(
+    "_id username name sponsorUCode planType createdAt"
+  );
+  return directs.map((user) => ({
+    _id: user._id,
+    username: user.username,
+    name: user.name,
+    sponsorUCode: user.sponsorUCode || null,
+    planType: user.planType,
+    createdAt: user.createdAt,
+    depth: 1,
+  }));
+};
 
-export { getUserHierarchy };
+export { getUserHierarchy, getUserDirects };

@@ -483,12 +483,12 @@ export async function login(
 
     const user = await UserModel.findOne({ username });
     if (!user) {
-      throw new ApiError(401, "Invalid username or password");
+      throw new ApiError(401, "Invalid username");
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password || "");
     if (!isPasswordValid) {
-      throw new ApiError(401, "Invalid username or password");
+      throw new ApiError(401, "Invalid password");
     }
 
     const token = signJWT({
