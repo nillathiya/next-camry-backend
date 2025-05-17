@@ -17,6 +17,7 @@ import websiteSettingRoutes from "./websiteSettingRoute";
 import walletSettingRoutes from "./walletSettingRoute";
 import topUpRoutes from "./topUpRoute";
 import poolRoutes from "./poolRoute";
+import planRoutes from "./planRoute";
 
 async function configureRoutes(): Promise<Router> {
   const router = Router();
@@ -38,6 +39,7 @@ async function configureRoutes(): Promise<Router> {
   router.use("/api/tickets", ticketRoutes);
   router.use("/api/top-up", topUpRoutes);
   router.use("/api/pool", poolRoutes);
+  router.use("/api/plan", planRoutes);
 
   // Mount async routes (await the Promise<Router>)
   const userRouter = await userRoutes;
