@@ -388,7 +388,7 @@ export async function getUserWallet(
     if (!wallet) {
       throw new ApiError(404, "Wallet not found");
     }
-    const walletSettings = await db.walletSettings.findWalletSettings({});
+    const walletSettings = await db.walletSettings.findWalletSettings({type:"wallet"});
     console.log("walletSettings", walletSettings);
     if (!walletSettings) {
       throw new ApiError(404, "WalletSettings not found");
